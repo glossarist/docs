@@ -1,0 +1,25 @@
+= GLOSS 1.0 — The Glossarist Ontology Specification
+:docnumber: GLOSS-1.0
+:status: draft-skeleton
+// SSOT: concept-model ontologies/glossarist.ttl (41 classes, 169 properties, 47 SHACL shapes)
+
+== 1. Introduction
+GLOSS is the open ontology for terminological data behind the Glossarist suite. It models ISO 10241-1 terminological entries, ISO 704 concept relations (including two-axis partitives), and ISO 1087 designation types, and is SKOS/SKOS-XL-compatible by construction (imports SKOS, SKOS-XL, ISO 25964, PROV-O).
+
+== 2. Conformance
+Conformance classes mirror the capability/requirement classes of ISO 19135 Ed 2 (register, identifiers, versioning, item-class, item, actions, relations). A register system claims capabilities; the abstract test suite verifies them. See conformance/*.cc.yaml vendored from the standard.
+
+== 3. Namespace and identifiers
+Namespace IRI: https://www.glossarist.org/ontologies/ (prefix `gloss:`). Classes: Concept, LocalizedConcept, Designation (Expression, Abbreviation, Symbol, LetterSymbol, GraphicalSymbol, Prefix, Suffix), DetailedDefinition, ConceptSource, Citation, RelatedConcept, PartitiveRelation, PartitiveMember, ConceptSystem, ConceptCollection, ConceptDate, NonVerbalRepresentation, Figure, Table, Formula, and others per the vendored ontology.
+
+== 4. Data model (entry anatomy)
+Concept → LocalizedConcept (per language) → Designation (typed, grammar, normative status) + DetailedDefinition (per language, notes/examples) + ConceptSource→Citation (document + clause) ; Concept-level: relations (typed), partitives (presence × count, completeness, criterion), dates, non-verbal representations.
+
+== 5. SHACL constraints
+47 shapes validate every register before publication. Shape catalog: concept-model/ontologies/shapes/glossarist.shacl.ttl.
+
+== 6. Serializations
+JSON-LD (canonical context), Turtle, TBX (ISO 30042) round-trip; lossless projections of the same model — byte-stability is test-enforced.
+
+[NOTE]
+This skeleton is completed from concept-model v3.2.0 artifacts; the normative class/property annex is generated from the ontology TTL.
