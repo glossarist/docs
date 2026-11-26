@@ -1,0 +1,11 @@
+= Glossarist Docs
+
+Metanorma specification sources for the Glossarist suite, published at glossarist.org/docs:
+
+- *GLOSS 1.0* — the formal specification of the Glossarist ontology (from concept-model)
+- *GCR format* — the Glossarist Concept Register package format
+- *FERIN conformance* — ISO 19135 register procedure conformance for glossarist registers
+- *SPARQL cookbook* — 20 ready terminology queries
+- *Whitepaper* — the SOTA evidence document
+
+Mirrors the enosema/docs pattern (EFS channel): specifications as versioned standards, not READMEs.
