@@ -1,0 +1,81 @@
+# GLOSS SKOS Profile — machine-readable description (W3C Profiles Vocabulary)
+#
+# Profile IRI: https://www.glossarist.org/ontologies/profile/skos
+#
+# Prose version: spec/gloss-1.0.adoc, Annex C (SKOS profile).
+# This document describes the profile; it is not itself the ontology.
+
+@prefix prof:    <http://www.w3.org/ns/dx/prof/> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix gloss:   <https://www.glossarist.org/ontologies/> .
+
+<https://www.glossarist.org/ontologies/profile/skos>
+  a prof:Profile ;
+  dcterms:title "GLOSS SKOS Profile"@en ;
+  rdfs:label "GLOSS SKOS Profile"@en ;
+  dcterms:description """
+    The Glossarist ontology (GLOSS) interpreted as a profile of SKOS and
+    SKOS-XL. Concepts are dual-typed skos:Concept + gloss:Concept;
+    designations are skosxl:Label resources carrying grammar, normative
+    status, and provenance beyond plain SKOS labels. GLOSS-to-SKOS
+    projection is total and lossless; SKOS-to-GLOSS is partial by design.
+  """@en ;
+  dcterms:issued "2026-11-27"^^<http://www.w3.org/2001/XMLSchema#date> ;
+  dcterms:publisher <https://glossarist.org/> ;
+  prof:hasToken "gloss-skos" ;
+  prof:isProfileOf
+    <http://www.w3.org/2004/02/skos/core#> ,
+    <http://www.w3.org/2008/05/skos-xl#> ;
+  prof:hasResource
+    <https://www.glossarist.org/ontologies/glossarist> ,
+    <https://vocab.oimlsmart.org/ontologies/gloss-shacl> ,
+    <https://www.glossarist.org/ontologies/glossarist.context.jsonld> ;
+.
+
+# ── Resources ──────────────────────────────────────────────────────────────
+
+<https://www.glossarist.org/ontologies/glossarist>
+  a prof:Resource ;
+  dcterms:title "GLOSS ontology (normative vocabulary)"@en ;
+  prof:hasArtifact <https://www.glossarist.org/ontologies/glossarist> ;
+  dcterms:conformsTo owl: ;
+  prof:hasRole <http://www.w3.org/ns/dx/prof/role/vocabulary> ;
+.
+
+# Planned serving location for the packaged SHACL artifact
+# (dist/gloss-shacl.ttl in glossarist/concept-model).
+<https://vocab.oimlsmart.org/ontologies/gloss-shacl>
+  a prof:Resource ;
+  dcterms:title "GLOSS SHACL shapes (canonical Turtle)"@en ;
+  dcterms:description """
+    Publishing artifact dist/gloss-shacl.ttl; deployment at this IRI is
+    planned as of this working draft.
+  """@en ;
+  prof:hasArtifact <https://vocab.oimlsmart.org/ontologies/gloss-shacl> ;
+  dcterms:conformsTo <https://www.w3.org/TR/shacl/> ;
+  prof:hasRole <http://www.w3.org/ns/dx/prof/role/constraints> ;
+.
+
+<https://www.glossarist.org/ontologies/glossarist.context.jsonld>
+  a prof:Resource ;
+  dcterms:title "GLOSS JSON-LD context"@en ;
+  prof:hasArtifact <https://www.glossarist.org/ontologies/glossarist.context.jsonld> ;
+  dcterms:conformsTo <https://www.w3.org/TR/json-ld11/> ;
+  prof:hasRole <http://www.w3.org/ns/dx/prof/role/specification> ;
+.
+
+# ── Profile description document ───────────────────────────────────────────
+
+<>
+  a prof:ProfileDoc ;
+  rdfs:label "Profile description document for the GLOSS SKOS profile"@en ;
+  dcterms:description """
+    Description of https://www.glossarist.org/ontologies/profile/skos per
+    the W3C Profiles Vocabulary. Working draft; tracks concept-model main.
+  """@en ;
+  prof:withNamespace gloss: ;
+.

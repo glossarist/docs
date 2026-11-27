@@ -1,0 +1,215 @@
+= GLOSS 1.0 — The Glossarist Ontology Specification
+:docnumber: GLOSS-1.0
+:status: working-draft
+:revdate: 2026-11-27
+// SSOT: concept-model ontologies/glossarist.ttl (41 classes, 169 properties, 46 SHACL shapes)
+// Class/property annexes are GENERATED from the ontology TTL:
+//   python3 spec/tools/generate_tables.py
+// Regenerate and commit them after every ontology change.
+
+== 1. Introduction
+
+GLOSS is the open ontology for terminological data behind the Glossarist suite. It models ISO 10241-1 terminological entries, ISO 704 concept relations (including two-axis partitives), and ISO 1087 designation types, and is SKOS/SKOS-XL-compatible by construction: `gloss:Concept` is a `rdfs:subClassOf` `skos:Concept`, designations are `rdfs:subClassOf` `skosxl:Label`, and hierarchical relationship subtypes are reused directly from ISO 25964 SKOS-Thes (`iso-thes:`).
+
+The ontology further aligns with ISO 30042/TBX (data exchange), ISO 12620 (data category registry), PROV-O (source provenance), Dublin Core Terms (citation and language metadata), and ISO 639/15924/24229 (language, script, and conversion-system identifiers).
+
+This specification is the normative reference for:
+
+* producers emitting GLOSS data (glossarist-ruby, glossarist-js, concept-browser),
+* consumers validating registers (the SHACL shapes of <<shacl-constraints>>),
+* SKOS tooling interoperating with GLOSS registers (<<skos-profile>>).
+
+[NOTE]
+====
+*Status.* This document is a working draft. It tracks the `main` branch of glossarist/concept-model; the normative annexes are generated from the ontology Turtle and refresh with the model. Interfaces marked _planned_ are not yet deployed.
+====
+
+== 2. Normative language
+
+The key words *MUST*, *MUST NOT*, *REQUIRED*, *SHALL*, *SHALL NOT*, *SHOULD*, *SHOULD NOT*, *RECOMMENDED*, *MAY*, and *OPTIONAL* in this document are to be interpreted as described in RFC 2119 when, and only when, they appear in all capitals, as shown here.
+
+A *GLOSS register* is a dataset serialized per the Glossarist V3 dataset syntax and projected to RDF per this specification. A *GLOSS processor* is any software that produces, validates, or consumes GLOSS data.
+
+== 3. Conformance
+
+Conformance is defined per validation artifact, not by prose:
+
+* *Shape conformance* — a register MUST validate against the SHACL shapes published at <<shacl-constraints>> with zero `sh:Violation` results. `sh:Warning` and `sh:Info` severities denote reviewed advisories and recommendations respectively; they do not block conformance.
+* *Serialization conformance* — JSON-LD instances MUST use the canonical context (`glossarist.context.jsonld`); Turtle MUST use the canonical prefix bindings (`prefixes.ttl`). The canonical SKOS-XL prefix is `skosxl:`; `xl:` MUST NOT be introduced.
+* *Enum conformance* — every enumeration-valued property (status, source type/status, relationship type, normative status, term type, grammar values, ordering method, completeness, presence, count) MUST reference a `skos:Concept` in the corresponding SKOS ConceptScheme under the namespace.
+
+The register-procedure capabilities (registration, identifiers, versioning, item classes, actions, relations) follow ISO 19135 Ed 2 and are specified separately (FERIN conformance; planned document).
+
+== 4. Namespace and identifiers
+
+[cols="1,2",options="header"]
+|===
+|Artifact |IRI
+|Namespace (prefix `gloss:`) |https://www.glossarist.org/ontologies/
+|Ontology |https://www.glossarist.org/ontologies/glossarist
+|SHACL shapes artifact |served from https://vocab.oimlsmart.org/ontologies/gloss-shacl (planned)
+|SKOS profile |https://www.glossarist.org/ontologies/profile/skos
+|Canonical prefixes |ontologies/prefixes.ttl
+|JSON-LD context |ontologies/glossarist.context.jsonld
+|===
+
+The ontology declares `vann:preferredNamespacePrefix "gloss"`. Identifiers inside a register are register-local (concept identifiers, section identifiers); cross-register references use URN-based references (`gloss:urn`) resolved via dataset URNs.
+
+The model follows semantic versioning: removing or renaming a shape, class, property, prefix binding, or enum value is a MAJOR bump; additive classes, properties, shapes, and enum values are MINOR; shape bug fixes and documentation are PATCH.
+
+== 5. Data model (entry anatomy)
+
+The entry anatomy is:
+
+....
+Concept (managed concept)
+├── identifier, uri, status, dates, domains (Reference), tags
+├── hasRelatedConcept → RelatedConcept → ConceptRef (+ type, content)
+├── hasPartitiveRelation → PartitiveRelation (n-ary, ISO 704 rake)
+├── hasGenericRelation → GenericRelation (n-ary)
+└── hasLocalization → LocalizedConcept (per language)
+    ├── language, script, conversion system, classification, entry status
+    ├── hasDesignation → Designation (skosxl:Label)
+    │     ├── skosxl:literalForm, normative status, term type
+    │     ├── grammar info (on expressions), pronunciation, register
+    │     └── hasDesignationRelationship → DesignationRelationship
+    ├── hasDefinition / hasNote / hasExample / hasAnnotation
+    │     → DetailedDefinition (rdf:value + scoped examples + sources)
+    ├── hasSource → ConceptSource → Citation → CitationRef (+ locality)
+    ├── hasDate → ConceptDate (management events)
+    └── hasNonVerbalRep → NonVerbalRepresentation
+....
+
+=== 5.1 Concepts and localizations
+
+A `gloss:Concept` is the managed, language-independent concept. Each language version is a `gloss:LocalizedConcept` linked by `gloss:isLocalizationOf`, carrying language/script identification and localized content. Concepts carry management-level sources, dates, and status; localizations carry language-specific ones. Both are `skos:Concept` instances.
+
+=== 5.2 Designations
+
+Designations form a MECE hierarchy under `gloss:Designation` (`rdfs:subClassOf` `skosxl:Label`):
+
+[cols="1,1,2",options="header"]
+|===
+|Type |Extends |Definition
+|`gloss:Expression` |Designation |A word or phrase used as a designation
+|`gloss:Abbreviation` |Expression |A shortened form (acronym, initialism, or truncation)
+|`gloss:Symbol` |Designation |A non-letter symbol representing a concept
+|`gloss:LetterSymbol` |Symbol |A single letter used as a symbol
+|`gloss:GraphicalSymbol` |Symbol |An iconic or graphical symbol
+|`gloss:Prefix` |Designation |A prefix that attaches before a designation
+|`gloss:Suffix` |Designation |A suffix that attaches after a designation
+|===
+
+Every designation carries `skosxl:literalForm` (exactly one), an optional normative status and ISO 12620 term type, and MAY carry designation-level relationships (`gloss:abbreviatedFormFor`, `gloss:shortFormFor`) linking designations of the same concept.
+
+=== 5.3 Definitions, notes, examples
+
+`gloss:DetailedDefinition` holds content as `rdf:value` with optional per-item sources. Notes and examples are distinct from definitions; a definition or note MAY carry scoped examples (`gloss:hasScopedExample`), nested inside the item they illustrate. A definition type (`gloss:hasDefinitionType`) records the ISO 704:2022 §5.3 definition strategy.
+
+=== 5.4 Sources and citations
+
+Provenance is claim-level. `gloss:ConceptSource` attaches at concept, localization, designation, definition, and non-verbal-representation level, with `sourceType` (`authoritative` / `lineage`) and `sourceStatus` (`identical`, `modified`, `restyled`, `context-added`, `generalisation`, `specialisation`, `unspecified`). Its `sourceOrigin` is a `gloss:Citation` — a structured reference (`CitationRef`: source + id + optional version) with locality, link, and original text. `gloss:sourcedFrom` is permitted only on lineage sources (SPARQL-enforced; see <<shacl-constraints>>).
+
+=== 5.5 Relationships
+
+Concept-level typed relationships (`gloss:RelatedConcept`) cover the ISO 10241-1 / ISO 19135 / ISO 25964 / SKOS / TBX spectrum: lifecycle (deprecates/supersedes/replaces/invalidates/retires and inverses), hierarchical generic/partitive/instantial, equivalence, SKOS mapping, comparative, associative, spatiotemporal, and lexical. SKOS-mapped types reuse `skos:` and `iso-thes:` properties directly; Glossarist-specific types are `gloss:` properties enumerated in <<annex-properties>>.
+
+=== 5.6 N-ary partitive and generic relations
+
+Where membership, completeness, and per-member presence matter as a single invariant (ISO 704:2022 rake notation), the n-ary forms are normative:
+
+* `gloss:PartitiveRelation` / `gloss:GenericRelation` — one comprehensive (`gloss:ConceptRef`), two or more members (`gloss:ConceptSystemMember` subclasses), an optional `completeness` (`complete` / `partial`), and an optional multilingual `criterion`.
+* Members (`gloss:PartitiveMember`, `gloss:GenericMember`) carry the `ref`, an ISO 704 `presence` (`required` / `optional`), a `count` (`exactly_one`, `compulsory_at_least_one`, `multiple`), and `isDelimiting`. The combination presence=`optional` with count=`compulsory_at_least_one` is vacuous and rejected by shape.
+* Binary hierarchical edges (`iso-thes:broaderPartitive` and related pairwise links) coexist with the n-ary forms; consolidation is not automatic.
+
+`gloss:ConceptSystem` (ISO 12620 A.7) models concept systems with a system type (`generic`, `partitive`, `sequential`, `associative`, `mixed`) and `gloss:ConceptRef` members; `gloss:ConceptCollection` models managed collections (`skos:Collection`).
+
+=== 5.7 Non-verbal representations
+
+Non-verbal content (images, tables, formulas) exists at two levels sharing the `gloss:NonVerbalEntity` payload (caption, alt text, description, sources): the concept-local `gloss:NonVerbalRepresentation` (typed image/table/formula) and the dataset-shared `gloss:Figure`, `gloss:Table`, `gloss:Formula` with stable identifiers and `gloss:FigureImage` variants (format, role, dimensions, subfigures).
+
+=== 5.8 Dataset register
+
+Each register carries a self-describing `gloss:DatasetRegister` (identifier, URN, reference, year, status, ordering method, language order, owner, source repository, logo, supersedes link) and a hierarchical `gloss:Section` tree (`gloss:hasChildSection` is transitive; membership is its transitive closure).
+
+== 6. Serializations
+
+JSON-LD (canonical context), Turtle, and TBX (ISO 30042) round-trip are lossless projections of the same model. The JSON-LD context types `gloss:caption`, `gloss:altText`, and `gloss:description` as `xsd:string`, and `gloss:criterion` / `gloss:characteristic` as language containers.
+
+[[shacl-constraints]]
+== 7. SHACL constraints
+
+The shapes graph is GENERATED from the ontology and the declarative constraint model (ontologies/shapes/shacl-model.yml in glossarist/concept-model); it MUST NOT be hand-edited. Current content:
+
+* 46 `sh:NodeShape` declarations covering all 41 GLOSS classes, plus non-GLOSS targets (`foaf:Image`) and subject-of targets;
+* 199 property shapes derived from OWL domains/ranges plus declared cardinalities, value schemes, and enumerations;
+* 4 SPARQL constraints: lineage-only `gloss:sourcedFrom`; the vacuous presence/count combination rejection; external-concept definition coherence (`sh:Warning`); partitive-relation ownership cross-reference (`sh:Warning`);
+* severity overrides: `sh:Info` (delimiting characteristic recommendation), `sh:Warning` (soft coherence rules).
+
+Every OWL property whose `rdfs:domain` includes a shaped class appears as a property shape on that class's node shape unless explicitly omitted (each omission is declared with a reason in the constraint model). A coverage gate and a regeneration drift gate run in CI.
+
+.Artifact publication
+[cols="1,2",options="header"]
+|===
+|Form |Location
+|Source (SSOT) |concept-model `ontologies/shapes/glossarist.shacl.ttl`
+|Publishing artifact (canonical Turtle) |`dist/gloss-shacl.ttl` + sha256, refreshed by `exe/package-shacl`
+|Serving location (planned) |https://vocab.oimlsmart.org/ontologies/gloss-shacl
+|Namespace |https://www.glossarist.org/ontologies/
+|===
+
+Validation of instance data is defined in conformance terms: a GLOSS processor validating a register MUST use a SHACL engine with this shapes graph and MUST treat `sh:Violation` results as non-conformance.
+
+[[annex-classes]]
+== Annex A: Class reference
+
+The table is generated from the ontology Turtle. Regenerate with `python3 spec/tools/generate_tables.py` after any ontology change.
+
+include::gloss-1.0-classes.adoc[]
+
+[[annex-properties]]
+== Annex B: Property reference
+
+The table is generated from the ontology Turtle. Regenerate with `python3 spec/tools/generate_tables.py` after any ontology change.
+
+include::gloss-1.0-properties.adoc[]
+
+[[skos-profile]]
+== Annex C: SKOS profile
+
+GLOSS defines a formal profile of SKOS per the W3C Profiles Vocabulary. The machine-readable profile description is published at spec/profiles/profile.ttl; its content is reproduced here in prose.
+
+.Profile identification
+
+* **Profile IRI**: `https://www.glossarist.org/ontologies/profile/skos`
+* **Base vocabularies**: SKOS 2009 + SKOS-XL 2008
+* **Artifacts of record**: glossarist.ttl (ontology), gloss-shacl.ttl (constraints)
+
+.Constraints imposed on SKOS usage (SHACL-expressed)
+
+* Concepts are dual-typed: a GLOSS concept instance MUST declare both `gloss:Concept` (or a subclass) and `skos:Concept` (shape `ConceptShape`).
+* Designations are `skosxl:Label` resources (`gloss:Designation` subclass); preferred and non-preferred terms link via `skosxl:prefLabel` / `skosxl:altLabel`, each label carrying exactly one `skosxl:literalForm`.
+* Preferred labels per language derive from preferred designations; a localization SHOULD expose its preferred designation as a `skosxl:prefLabel`.
+* Enumeration-valued properties (`gloss:hasStatus`, `gloss:hasEntryStatus`, `gloss:normativeStatus`, `gloss:hasTermType`, `gloss:sourceType`, `gloss:sourceStatus`, `gloss:dateType`, grammar values, ordering methods, completeness/presence/count) MUST reference `skos:Concept` individuals in the corresponding ConceptScheme (`sh:valuesFrom`).
+
+.Extensions beyond SKOS (lossless round-trip requires them)
+
+* Per-language localization structure (`gloss:LocalizedConcept`) — SKOS has no concept/localization distinction.
+* Designation grammar and types (`gloss:GrammarInfo`, `gloss:hasTermType`), pronunciation, register.
+* Claim-level source citations (`gloss:ConceptSource` → `gloss:Citation`) with lineage semantics.
+* N-ary partitive structure (`gloss:PartitiveRelation`) with presence × count and completeness.
+* Non-verbal definitions (`gloss:NonVerbalRepresentation`, figures/tables/formulas).
+* Register governance (`gloss:ConceptDate`, entry status, review type, release).
+
+.Mapping semantics
+
+* *GLOSS → SKOS is total and lossless*: preferred labels map from preferred designations, hierarchies from generic relations, notes from definitions.
+* *SKOS → GLOSS is partial by design*: plain SKOS labels cannot carry grammar, normative status, or provenance; importers MAY create GLOSS records with default statuses and MUST NOT invent provenance.
+
+.Validating against the profile
+
+SKOS-only consumers (e.g. SPARQL endpoints over GLOSS registers) see standard SKOS data; profile validators use the published shapes graph. Data that is SKOS-only (no `gloss:` types) is outside the profile's target class set and produces no shape violations — validators MUST check the targeted-node census, not merely the violation count, when asserting that data exercises the profile.
+
+== Annex D: Status of this document
+
+This is a working draft of GLOSS 1.0, generated against concept-model v3 artifacts (41 classes, 169 properties, 46 shapes). The class and property annexes are mechanically generated from the ontology; the normative sections are maintained by hand. Feedback goes to glossarist/concept-model and glossarist/docs issues.
